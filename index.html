@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Probably Good - Advising Dashboard (Prototype)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f6fa; color: #2d3436; }
+
+  /* Top bar */
+  .topbar { background: #2d3436; color: white; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
+  .topbar h1 { font-size: 18px; font-weight: 600; }
+  .topbar h1 span { color: #00b894; }
+  .topbar .user { font-size: 14px; color: #b2bec3; }
+
+  /* Layout */
+  .layout { display: flex; min-height: calc(100vh - 48px); }
+
+  /* Sidebar */
+  .sidebar { width: 220px; background: white; border-right: 1px solid #dfe6e9; padding: 16px 0; flex-shrink: 0; }
+  .sidebar .nav-item { padding: 10px 20px; cursor: pointer; font-size: 14px; color: #636e72; display: flex; align-items: center; gap: 10px; transition: all 0.15s; }
+  .sidebar .nav-item:hover { background: #f0f0f0; }
+  .sidebar .nav-item.active { background: #dfe6e9; color: #2d3436; font-weight: 600; border-left: 3px solid #00b894; }
+  .sidebar .nav-item .badge { background: #e17055; color: white; border-radius: 10px; padding: 1px 7px; font-size: 11px; font-weight: 600; }
+  .sidebar .nav-item .badge.green { background: #00b894; }
+  .sidebar .section-label { padding: 16px 20px 6px; font-size: 11px; text-transform: uppercase; color: #b2bec3; letter-spacing: 1px; }
+
+  /* Main */
+  .main { flex: 1; padding: 24px; overflow-y: auto; }
+
+  /* Page header */
+  .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .page-header h2 { font-size: 22px; }
+  .page-header .subtitle { color: #636e72; font-size: 14px; margin-top: 4px; }
+
+  /* Stats row */
+  .stats-row { display: flex; gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: white; border-radius: 8px; padding: 16px 20px; flex: 1; border: 1px solid #dfe6e9; }
+  .stat-card .stat-value { font-size: 28px; font-weight: 700; color: #2d3436; }
+  .stat-card .stat-label { font-size: 13px; color: #636e72; margin-top: 2px; }
+  .stat-card.highlight { border-left: 3px solid #00b894; }
+  .stat-card.warn { border-left: 3px solid #e17055; }
+  .stat-card.info { border-left: 3px solid #0984e3; }
+
+  /* Cards / Tables */
+  .card { background: white; border-radius: 8px; border: 1px solid #dfe6e9; margin-bottom: 16px; overflow: hidden; }
+  .card-header { padding: 14px 20px; border-bottom: 1px solid #dfe6e9; display: flex; justify-content: space-between; align-items: center; }
+  .card-header h3 { font-size: 15px; }
+  .card-body { padding: 16px 20px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 10px 14px; font-size: 12px; text-transform: uppercase; color: #636e72; letter-spacing: 0.5px; border-bottom: 1px solid #dfe6e9; }
+  td { padding: 12px 14px; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8f9fa; }
+
+  /* Status badges */
+  .status { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+  .status.applied { background: #ffeaa7; color: #856404; }
+  .status.approved { background: #55efc4; color: #00695c; }
+  .status.booked { background: #74b9ff; color: #1a4a7a; }
+  .status.complete { background: #a29bfe; color: #3a2d7c; }
+  .status.follow-up { background: #fd79a8; color: #7c2845; }
+  .status.rejected { background: #fab1a0; color: #7c3a2d; }
+
+  /* Buttons */
+  .btn { padding: 7px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.15s; }
+  .btn-primary { background: #00b894; color: white; }
+  .btn-primary:hover { background: #00a381; }
+  .btn-danger { background: #e17055; color: white; }
+  .btn-danger:hover { background: #c0594a; }
+  .btn-secondary { background: #dfe6e9; color: #2d3436; }
+  .btn-secondary:hover { background: #c8d6db; }
+  .btn-outline { background: transparent; border: 1px solid #dfe6e9; color: #636e72; }
+  .btn-outline:hover { background: #f0f0f0; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-group { display: flex; gap: 8px; }
+
+  /* Tags */
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; background: #dfe6e9; color: #636e72; margin-right: 4px; }
+  .tag.green { background: #55efc4; color: #00695c; }
+  .tag.blue { background: #74b9ff; color: #1a4a7a; }
+  .tag.purple { background: #a29bfe; color: #3a2d7c; }
+
+  /* Panels */
+  .panel-overlay { display: none; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.3); z-index: 100; }
+  .panel-overlay.active { display: block; }
+  .panel { position: fixed; top: 0; right: 0; bottom: 0; width: 640px; background: white; z-index: 101; overflow-y: auto; box-shadow: -4px 0 20px rgba(0,0,0,0.15); transform: translateX(100%); transition: transform 0.25s ease; }
+  .panel-overlay.active .panel { transform: translateX(0); }
+  .panel-header { padding: 16px 24px; border-bottom: 1px solid #dfe6e9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; z-index: 1; }
+  .panel-header h3 { font-size: 17px; }
+  .panel-close { cursor: pointer; font-size: 20px; color: #636e72; background: none; border: none; }
+  .panel-body { padding: 20px 24px; }
+  .panel-footer { padding: 16px 24px; border-top: 1px solid #dfe6e9; display: flex; justify-content: flex-end; gap: 8px; position: sticky; bottom: 0; background: white; }
+
+  /* Form elements */
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #636e72; }
+  .form-group .value { font-size: 14px; line-height: 1.5; }
+  textarea.editable { width: 100%; border: 1px solid #dfe6e9; border-radius: 6px; padding: 10px; font-family: inherit; font-size: 14px; resize: vertical; min-height: 200px; }
+
+  /* AI briefing section */
+  .briefing-section { margin-bottom: 20px; }
+  .briefing-section h4 { font-size: 14px; color: #00b894; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .briefing-section p, .briefing-section ul { font-size: 14px; line-height: 1.6; color: #2d3436; }
+  .briefing-section ul { padding-left: 20px; }
+  .briefing-section li { margin-bottom: 6px; }
+  .briefing-card { background: #f0fff4; border: 1px solid #b8e6c8; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+  .briefing-card.resource { background: #f0f4ff; border-color: #b8cce6; }
+  .briefing-card.warning { background: #fff8f0; border-color: #e6d0b8; }
+
+  /* Section dividers */
+  .section-divider { border: none; border-top: 1px solid #dfe6e9; margin: 20px 0; }
+
+  /* Email preview */
+  .email-preview { background: #fafafa; border: 1px solid #dfe6e9; border-radius: 8px; padding: 20px; font-size: 14px; line-height: 1.7; }
+  .email-preview .email-to { color: #636e72; font-size: 13px; margin-bottom: 4px; }
+  .email-preview .email-subject { font-weight: 600; font-size: 15px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #dfe6e9; }
+
+  /* AI badge */
+  .ai-badge { display: inline-flex; align-items: center; gap: 4px; background: linear-gradient(135deg, #a29bfe, #6c5ce7); color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+
+  /* Automation indicator */
+  .auto-indicator { display: inline-flex; align-items: center; gap: 4px; color: #00b894; font-size: 12px; font-weight: 600; }
+  .auto-indicator::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #00b894; }
+
+  /* Resource grid */
+  .resource-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .resource-item { background: white; border: 1px solid #dfe6e9; border-radius: 8px; padding: 14px; }
+  .resource-item h4 { font-size: 14px; margin-bottom: 6px; }
+  .resource-item p { font-size: 13px; color: #636e72; line-height: 1.4; }
+  .resource-item .resource-meta { margin-top: 8px; display: flex; gap: 4px; flex-wrap: wrap; }
+
+  /* Timeline */
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: #dfe6e9; }
+  .timeline-item { position: relative; margin-bottom: 16px; }
+  .timeline-item::before { content: ''; position: absolute; left: -20px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #00b894; border: 2px solid white; }
+  .timeline-item.pending::before { background: #dfe6e9; }
+  .timeline-item .tl-date { font-size: 12px; color: #636e72; }
+  .timeline-item .tl-content { font-size: 14px; margin-top: 2px; }
+
+  /* Hide all pages by default */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Search/filter bar */
+  .filter-bar { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; }
+  .filter-bar input[type="text"] { padding: 8px 12px; border: 1px solid #dfe6e9; border-radius: 6px; font-size: 14px; flex: 1; max-width: 300px; }
+  .filter-bar select { padding: 8px 12px; border: 1px solid #dfe6e9; border-radius: 6px; font-size: 14px; background: white; }
+
+  /* Prototype banner */
+  .proto-banner { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; text-align: center; padding: 8px; font-size: 13px; font-weight: 600; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .stats-row { flex-wrap: wrap; }
+    .stat-card { min-width: 140px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="proto-banner">INTERACTIVE PROTOTYPE - Click around to explore the advisor experience</div>
+
+<div class="topbar">
+  <h1><span>Probably Good</span> &middot; Advising Dashboard</h1>
+  <div class="user">Tom R. (Advisor) &middot; <a href="#" style="color:#00b894;">Logout</a></div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="section-label">Workflow</div>
+    <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
+      <span>Dashboard</span>
+    </div>
+    <div class="nav-item" data-page="applications" onclick="showPage('applications')">
+      <span>Applications</span>
+      <span class="badge">7</span>
+    </div>
+    <div class="nav-item" data-page="upcoming" onclick="showPage('upcoming')">
+      <span>Upcoming Calls</span>
+      <span class="badge green">4</span>
+    </div>
+    <div class="nav-item" data-page="followups" onclick="showPage('followups')">
+      <span>Follow-ups</span>
+      <span class="badge">3</span>
+    </div>
+    <div class="section-label">Data</div>
+    <div class="nav-item" data-page="resources" onclick="showPage('resources')">
+      <span>Resources</span>
+    </div>
+    <div class="nav-item" data-page="contacts" onclick="showPage('contacts')">
+      <span>Network</span>
+    </div>
+    <div class="section-label">Engage</div>
+    <div class="nav-item" data-page="comms" onclick="showPage('comms')">
+      <span>Communications</span>
+    </div>
+    <div class="nav-item" data-page="metrics" onclick="showPage('metrics')">
+      <span>Metrics</span>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- ========== DASHBOARD ========== -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <h2>Dashboard</h2>
+          <div class="subtitle">Week of Feb 24 - Mar 2, 2026</div>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card warn">
+          <div class="stat-value">7</div>
+          <div class="stat-label">Pending Applications</div>
+        </div>
+        <div class="stat-card highlight">
+          <div class="stat-value">4</div>
+          <div class="stat-label">Calls This Week</div>
+        </div>
+        <div class="stat-card info">
+          <div class="stat-value">3</div>
+          <div class="stat-label">Follow-ups to Send</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">8.7</div>
+          <div class="stat-label">Avg Satisfaction (last 30d)</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Today's Calls</h3>
+          <span class="auto-indicator">Briefings generated</span>
+        </div>
+        <table>
+          <tr>
+            <th>Time</th><th>Advisee</th><th>Focus Area</th><th>Briefing</th><th></th>
+          </tr>
+          <tr>
+            <td><strong>10:00 AM</strong></td>
+            <td>Sarah Chen</td>
+            <td><span class="tag blue">AI Safety</span><span class="tag">Career Change</span></td>
+            <td><span class="ai-badge">AI Briefing Ready</span></td>
+            <td><button class="btn btn-outline btn-sm" onclick="openPanel('briefing')">View Briefing</button></td>
+          </tr>
+          <tr>
+            <td><strong>2:30 PM</strong></td>
+            <td>Marcus Johnson</td>
+            <td><span class="tag green">Global Health</span><span class="tag">Early Career</span></td>
+            <td><span class="ai-badge">AI Briefing Ready</span></td>
+            <td><button class="btn btn-outline btn-sm" onclick="openPanel('briefing-marcus')">View Briefing</button></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Pending Follow-ups</h3>
+          <span class="auto-indicator">AI drafts ready for review</span>
+        </div>
+        <table>
+          <tr>
+            <th>Advisee</th><th>Call Date</th><th>Status</th><th></th>
+          </tr>
+          <tr>
+            <td>Emma Rodriguez</td>
+            <td>Feb 21, 2026</td>
+            <td><span class="ai-badge">Email Draft Ready</span></td>
+            <td><button class="btn btn-primary btn-sm" onclick="openPanel('followup')">Review & Send</button></td>
+          </tr>
+          <tr>
+            <td>James Park</td>
+            <td>Feb 20, 2026</td>
+            <td><span class="ai-badge">Email Draft Ready</span></td>
+            <td><button class="btn btn-primary btn-sm">Review & Send</button></td>
+          </tr>
+          <tr>
+            <td>Aisha Okafor</td>
+            <td>Feb 19, 2026</td>
+            <td><span class="ai-badge">Email Draft Ready</span></td>
+            <td><button class="btn btn-primary btn-sm">Review & Send</button></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Recent Activity</h3></div>
+        <div class="card-body">
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="tl-date">Today, 8:15 AM</div>
+              <div class="tl-content"><span class="auto-indicator">Auto</span> Pre-call briefing generated for Sarah Chen</div>
+            </div>
+            <div class="timeline-item">
+              <div class="tl-date">Today, 8:15 AM</div>
+              <div class="tl-content"><span class="auto-indicator">Auto</span> Pre-call briefing generated for Marcus Johnson</div>
+            </div>
+            <div class="timeline-item">
+              <div class="tl-date">Yesterday, 4:30 PM</div>
+              <div class="tl-content"><span class="auto-indicator">Auto</span> Post-call analysis completed for Emma Rodriguez</div>
+            </div>
+            <div class="timeline-item">
+              <div class="tl-date">Yesterday, 2:00 PM</div>
+              <div class="tl-content"><span class="auto-indicator">Auto</span> Zoom transcript received for Emma Rodriguez</div>
+            </div>
+            <div class="timeline-item">
+              <div class="tl-date">Yesterday, 11:00 AM</div>
+              <div class="tl-content">New application received from Priya Sharma</div>
+            </div>
+            <div class="timeline-item">
+              <div class="tl-date">Feb 22, 3:15 PM</div>
+              <div class="tl-content"><span class="auto-indicator">Auto</span> Feedback survey sent to David Kim (call was Feb 19)</div>
+            </div>
+            <div class="timeline-item pending">
+              <div class="tl-date">Scheduled: Mar 19</div>
+              <div class="tl-content">3-month check-in for Leah Torres</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== APPLICATIONS ========== -->
+    <div class="page" id="page-applications">
+      <div class="page-header">
+        <div>
+          <h2>Applications</h2>
+          <div class="subtitle">7 pending review</div>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" placeholder="Search by name or keyword...">
+        <select>
+          <option>All Statuses</option>
+          <option selected>Pending Review</option>
+          <option>Approved</option>
+          <option>Waitlisted</option>
+          <option>Rejected</option>
+        </select>
+        <select>
+          <option>All Interest Areas</option>
+          <option>AI Safety</option>
+          <option>Global Health</option>
+          <option>Policy</option>
+          <option>Operations</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <table>
+          <tr>
+            <th>Applicant</th><th>Applied</th><th>Interest Areas</th><th>AI Summary</th><th>Status</th><th></th>
+          </tr>
+          <tr onclick="openPanel('application')" style="cursor:pointer;">
+            <td><strong>Priya Sharma</strong><br><span style="font-size:12px;color:#636e72;">priya.s@gmail.com</span></td>
+            <td>Feb 24</td>
+            <td><span class="tag blue">AI Safety</span><span class="tag purple">Research</span></td>
+            <td style="font-size:13px;color:#636e72;max-width:300px;">ML researcher at DeepMind (3 yrs), wants to transition to AI safety research. Strong technical background, published 2 papers on interpretability. Looking for guidance on orgs and positioning.</td>
+            <td><span class="status applied">Pending</span></td>
+            <td><button class="btn btn-outline btn-sm">Review</button></td>
+          </tr>
+          <tr style="cursor:pointer;">
+            <td><strong>Alex Thompson</strong><br><span style="font-size:12px;color:#636e72;">alex.t@outlook.com</span></td>
+            <td>Feb 23</td>
+            <td><span class="tag green">Global Health</span><span class="tag">Operations</span></td>
+            <td style="font-size:13px;color:#636e72;max-width:300px;">Operations manager at a logistics company (5 yrs). Interested in pivoting to global health ops. Has relevant supply chain experience. Considering GiveDirectly, Evidence Action roles.</td>
+            <td><span class="status applied">Pending</span></td>
+            <td><button class="btn btn-outline btn-sm">Review</button></td>
+          </tr>
+          <tr style="cursor:pointer;">
+            <td><strong>Lina Bergstrom</strong><br><span style="font-size:12px;color:#636e72;">lina.b@proton.me</span></td>
+            <td>Feb 23</td>
+            <td><span class="tag">Policy</span><span class="tag">Climate</span></td>
+            <td style="font-size:13px;color:#636e72;max-width:300px;">PhD candidate in environmental policy (graduating June). Wants to work on climate policy in government or think tanks. Based in Sweden but open to relocating. Strong writing skills.</td>
+            <td><span class="status applied">Pending</span></td>
+            <td><button class="btn btn-outline btn-sm">Review</button></td>
+          </tr>
+          <tr style="cursor:pointer;">
+            <td><strong>Daniel Okonkwo</strong><br><span style="font-size:12px;color:#636e72;">d.okonkwo@yahoo.com</span></td>
+            <td>Feb 22</td>
+            <td><span class="tag blue">AI Safety</span><span class="tag">Entrepreneurship</span></td>
+            <td style="font-size:13px;color:#636e72;max-width:300px;">Software engineer (7 yrs), founded a small SaaS startup. Wants to explore AI governance startups. Has fundraising experience and strong network in African tech ecosystem.</td>
+            <td><span class="status applied">Pending</span></td>
+            <td><button class="btn btn-outline btn-sm">Review</button></td>
+          </tr>
+          <tr style="cursor:pointer;">
+            <td><strong>Rosa Martinez</strong><br><span style="font-size:12px;color:#636e72;">rosa.m@gmail.com</span></td>
+            <td>Feb 21</td>
+            <td><span class="tag green">Global Health</span><span class="tag purple">Research</span></td>
+            <td style="font-size:13px;color:#636e72;max-width:300px;">Epidemiologist at WHO (2 yrs), considering move to EA-aligned global health research. Interested in GiveWell-style cost-effectiveness research. PhD in public health.</td>
+            <td><span class="status applied">Pending</span></td>
+            <td><button class="btn btn-outline btn-sm">Review</button></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== UPCOMING CALLS ========== -->
+    <div class="page" id="page-upcoming">
+      <div class="page-header">
+        <div>
+          <h2>Upcoming Calls</h2>
+          <div class="subtitle">4 calls scheduled</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <table>
+          <tr>
+            <th>Date & Time</th><th>Advisee</th><th>Advisor</th><th>Focus</th><th>Briefing</th><th></th>
+          </tr>
+          <tr>
+            <td><strong>Today</strong><br>10:00 AM</td>
+            <td>Sarah Chen</td>
+            <td>Tom R.</td>
+            <td><span class="tag blue">AI Safety</span></td>
+            <td><span class="ai-badge">Ready</span></td>
+            <td>
+              <button class="btn btn-outline btn-sm" onclick="openPanel('briefing')">Briefing</button>
+              <a href="#" class="btn btn-primary btn-sm" style="text-decoration:none;display:inline-block;">Join Zoom</a>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Today</strong><br>2:30 PM</td>
+            <td>Marcus Johnson</td>
+            <td>Tom R.</td>
+            <td><span class="tag green">Global Health</span></td>
+            <td><span class="ai-badge">Ready</span></td>
+            <td>
+              <button class="btn btn-outline btn-sm">Briefing</button>
+              <a href="#" class="btn btn-primary btn-sm" style="text-decoration:none;display:inline-block;">Join Zoom</a>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Wed Feb 26</strong><br>11:00 AM</td>
+            <td>Yuki Tanaka</td>
+            <td>Maya S.</td>
+            <td><span class="tag">Policy</span></td>
+            <td><span style="color:#636e72;font-size:12px;">Generates in 23h</span></td>
+            <td>
+              <button class="btn btn-outline btn-sm" disabled>Briefing</button>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Thu Feb 27</strong><br>3:00 PM</td>
+            <td>Carlos Reyes</td>
+            <td>Tom R.</td>
+            <td><span class="tag purple">Research</span><span class="tag">Biosecurity</span></td>
+            <td><span style="color:#636e72;font-size:12px;">Generates Feb 26</span></td>
+            <td>
+              <button class="btn btn-outline btn-sm" disabled>Briefing</button>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== FOLLOW-UPS ========== -->
+    <div class="page" id="page-followups">
+      <div class="page-header">
+        <div>
+          <h2>Follow-ups</h2>
+          <div class="subtitle">3 pending review &middot; AI-generated drafts ready</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <table>
+          <tr>
+            <th>Advisee</th><th>Call Date</th><th>Advisor</th><th>Summary</th><th>Email Draft</th><th></th>
+          </tr>
+          <tr>
+            <td><strong>Emma Rodriguez</strong></td>
+            <td>Feb 21</td>
+            <td>Tom R.</td>
+            <td style="font-size:13px;color:#636e72;max-width:250px;">Discussed transition from corporate law to policy. Interested in AI governance roles. Key decision: whether to do a master's first.</td>
+            <td><span class="ai-badge">Draft Ready</span></td>
+            <td><button class="btn btn-primary btn-sm" onclick="openPanel('followup')">Review & Send</button></td>
+          </tr>
+          <tr>
+            <td><strong>James Park</strong></td>
+            <td>Feb 20</td>
+            <td>Maya S.</td>
+            <td style="font-size:13px;color:#636e72;max-width:250px;">Explored earning-to-give vs. direct work. Currently in finance, strong quant background. Leaning toward AI safety technical work.</td>
+            <td><span class="ai-badge">Draft Ready</span></td>
+            <td><button class="btn btn-primary btn-sm">Review & Send</button></td>
+          </tr>
+          <tr>
+            <td><strong>Aisha Okafor</strong></td>
+            <td>Feb 19</td>
+            <td>Tom R.</td>
+            <td style="font-size:13px;color:#636e72;max-width:250px;">Global health focus. Currently an MPH student. Discussed GiveDirectly, Malaria Consortium, AMF internship paths. Needs networking guidance.</td>
+            <td><span class="ai-badge">Draft Ready</span></td>
+            <td><button class="btn btn-primary btn-sm">Review & Send</button></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== RESOURCES ========== -->
+    <div class="page" id="page-resources">
+      <div class="page-header">
+        <div>
+          <h2>Resources</h2>
+          <div class="subtitle">142 resources across 8 categories</div>
+        </div>
+        <button class="btn btn-primary" onclick="openPanel('add-resource')">+ Add Resource</button>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" placeholder="Search resources...">
+        <select>
+          <option>All Categories</option>
+          <option>Job Boards</option>
+          <option>Organizations</option>
+          <option>Guides</option>
+          <option>Courses</option>
+          <option>Communities</option>
+        </select>
+        <select>
+          <option>All Career Paths</option>
+          <option>AI Safety</option>
+          <option>Global Health</option>
+          <option>Policy</option>
+          <option>Operations</option>
+          <option>Research</option>
+        </select>
+      </div>
+
+      <div class="resource-grid">
+        <div class="resource-item">
+          <h4>80,000 Hours Job Board</h4>
+          <p>Curated high-impact job listings across cause areas. Updated weekly with vetted positions.</p>
+          <div class="resource-meta">
+            <span class="tag">Job Board</span>
+            <span class="tag blue">All Paths</span>
+            <span class="tag green">All Stages</span>
+          </div>
+        </div>
+        <div class="resource-item">
+          <h4>AI Safety Fundamentals</h4>
+          <p>Free course covering core concepts in AI alignment. Good entry point for career changers with technical background.</p>
+          <div class="resource-meta">
+            <span class="tag">Course</span>
+            <span class="tag blue">AI Safety</span>
+            <span class="tag">Exploring</span>
+          </div>
+        </div>
+        <div class="resource-item">
+          <h4>GiveWell Research Analyst Guide</h4>
+          <p>Comprehensive guide to what GiveWell looks for in research analysts. Useful for anyone considering cost-effectiveness research.</p>
+          <div class="resource-meta">
+            <span class="tag">Guide</span>
+            <span class="tag green">Global Health</span>
+            <span class="tag purple">Research</span>
+          </div>
+        </div>
+        <div class="resource-item">
+          <h4>EA Forum</h4>
+          <p>Community forum for effective altruism discussions. Great for networking, learning about cause areas, and finding collaborators.</p>
+          <div class="resource-meta">
+            <span class="tag">Community</span>
+            <span class="tag blue">All Paths</span>
+          </div>
+        </div>
+        <div class="resource-item">
+          <h4>Open Philanthropy Grants Database</h4>
+          <p>Searchable database of all Open Phil grants. Useful for understanding the funding landscape and finding funded organizations.</p>
+          <div class="resource-meta">
+            <span class="tag">Guide</span>
+            <span class="tag blue">All Paths</span>
+            <span class="tag">Mid Career</span>
+          </div>
+        </div>
+        <div class="resource-item">
+          <h4>Alignment Forum</h4>
+          <p>Technical AI alignment research forum. For those with strong ML/math background wanting to enter alignment research.</p>
+          <div class="resource-meta">
+            <span class="tag">Community</span>
+            <span class="tag blue">AI Safety</span>
+            <span class="tag purple">Research</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== CONTACTS ========== -->
+    <div class="page" id="page-contacts">
+      <div class="page-header">
+        <div>
+          <h2>Network Contacts</h2>
+          <div class="subtitle">People we can connect advisees with</div>
+        </div>
+        <button class="btn btn-primary">+ Add Contact</button>
+      </div>
+      <div class="card">
+        <table>
+          <tr><th>Name</th><th>Organization</th><th>Role</th><th>Expertise</th><th>Available</th><th>Referrals</th></tr>
+          <tr>
+            <td><strong>Dr. Nina Patel</strong></td>
+            <td>MIRI</td>
+            <td>Research Scientist</td>
+            <td><span class="tag blue">AI Safety</span></td>
+            <td style="color:#00b894;">Yes</td>
+            <td>4</td>
+          </tr>
+          <tr>
+            <td><strong>John Osei</strong></td>
+            <td>GiveDirectly</td>
+            <td>Country Director, Kenya</td>
+            <td><span class="tag green">Global Health</span><span class="tag">Operations</span></td>
+            <td style="color:#00b894;">Yes</td>
+            <td>7</td>
+          </tr>
+          <tr>
+            <td><strong>Maya Lin</strong></td>
+            <td>Open Philanthropy</td>
+            <td>Program Officer</td>
+            <td><span class="tag">Policy</span><span class="tag blue">AI Safety</span></td>
+            <td style="color:#00b894;">Yes</td>
+            <td>3</td>
+          </tr>
+          <tr>
+            <td><strong>Sam Whitfield</strong></td>
+            <td>Anthropic</td>
+            <td>Policy Researcher</td>
+            <td><span class="tag blue">AI Safety</span><span class="tag">Policy</span></td>
+            <td style="color:#e17055;">Busy until April</td>
+            <td>2</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== COMMUNICATIONS ========== -->
+    <div class="page" id="page-comms">
+      <div class="page-header">
+        <div>
+          <h2>Communications</h2>
+          <div class="subtitle">Reach out to past advisees</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Compose Bulk Message</h3></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label>Recipients Filter</label>
+            <div class="filter-bar" style="margin-bottom:0;">
+              <select><option>All Past Advisees</option><option>AI Safety advisees</option><option>Global Health advisees</option><option>Last 3 months</option><option>Last 6 months</option></select>
+              <span style="font-size:13px;color:#636e72;">48 recipients match</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Subject</label>
+            <input type="text" style="width:100%;padding:8px 12px;border:1px solid #dfe6e9;border-radius:6px;font-size:14px;" placeholder="e.g., New AI Safety job opportunities">
+          </div>
+          <div class="form-group">
+            <label>Message</label>
+            <textarea class="editable" rows="6" placeholder="Hi {{name}},&#10;&#10;Write your message here. Use {{name}} for personalization..."></textarea>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;">
+            <button class="btn btn-secondary">Preview</button>
+            <button class="btn btn-primary">Send to 48 recipients</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Recent Communications</h3></div>
+        <table>
+          <tr><th>Date</th><th>Type</th><th>Subject</th><th>Recipients</th></tr>
+          <tr>
+            <td>Feb 20</td>
+            <td><span class="tag">Bulk</span></td>
+            <td>New biosecurity fellowship opportunities</td>
+            <td>12 advisees</td>
+          </tr>
+          <tr>
+            <td>Feb 15</td>
+            <td><span class="tag green">Check-in</span></td>
+            <td>3-month career progress check-in</td>
+            <td>8 advisees</td>
+          </tr>
+          <tr>
+            <td>Feb 10</td>
+            <td><span class="tag">Bulk</span></td>
+            <td>EA Global London 2026 registration open</td>
+            <td>42 advisees</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== METRICS ========== -->
+    <div class="page" id="page-metrics">
+      <div class="page-header">
+        <div>
+          <h2>Metrics & Outcomes</h2>
+          <div class="subtitle">Tracking impact across all advising sessions</div>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card highlight">
+          <div class="stat-value">127</div>
+          <div class="stat-label">Total Sessions (all time)</div>
+        </div>
+        <div class="stat-card info">
+          <div class="stat-value">8.7/10</div>
+          <div class="stat-label">Avg Satisfaction</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">72%</div>
+          <div class="stat-label">Feedback Response Rate</div>
+        </div>
+        <div class="stat-card highlight">
+          <div class="stat-value">34</div>
+          <div class="stat-label">Career Transitions Reported</div>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-value">89%</div>
+          <div class="stat-label">Would Recommend (NPS)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">3.2 days</div>
+          <div class="stat-label">Avg Follow-up Time</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">62%</div>
+          <div class="stat-label">3-Month Check-in Rate</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">41%</div>
+          <div class="stat-label">6-Month Check-in Rate</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Career Transitions (last 6 months)</h3></div>
+        <table>
+          <tr><th>Advisee</th><th>Call Date</th><th>Transition</th><th>Reported</th></tr>
+          <tr>
+            <td>Leah Torres</td>
+            <td>Dec 2025</td>
+            <td>Management consulting -> AI governance at CSET</td>
+            <td>Feb 2026</td>
+          </tr>
+          <tr>
+            <td>David Kim</td>
+            <td>Nov 2025</td>
+            <td>PhD student -> GiveWell research analyst</td>
+            <td>Jan 2026</td>
+          </tr>
+          <tr>
+            <td>Fatima Al-Hassan</td>
+            <td>Oct 2025</td>
+            <td>Software engineer -> Malaria Consortium data team</td>
+            <td>Jan 2026</td>
+          </tr>
+          <tr>
+            <td>Ben Cooper</td>
+            <td>Sep 2025</td>
+            <td>Finance -> earning-to-give (pledged 10% via GWWC)</td>
+            <td>Dec 2025</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Sessions by Interest Area (last 90 days)</h3></div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="width:120px;font-size:14px;">AI Safety</span>
+              <div style="flex:1;background:#dfe6e9;border-radius:4px;height:24px;">
+                <div style="width:38%;background:#74b9ff;border-radius:4px;height:24px;display:flex;align-items:center;padding-left:8px;font-size:12px;color:white;font-weight:600;">38%</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="width:120px;font-size:14px;">Global Health</span>
+              <div style="flex:1;background:#dfe6e9;border-radius:4px;height:24px;">
+                <div style="width:28%;background:#55efc4;border-radius:4px;height:24px;display:flex;align-items:center;padding-left:8px;font-size:12px;color:#00695c;font-weight:600;">28%</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="width:120px;font-size:14px;">Policy</span>
+              <div style="flex:1;background:#dfe6e9;border-radius:4px;height:24px;">
+                <div style="width:18%;background:#a29bfe;border-radius:4px;height:24px;display:flex;align-items:center;padding-left:8px;font-size:12px;color:white;font-weight:600;">18%</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="width:120px;font-size:14px;">Operations</span>
+              <div style="flex:1;background:#dfe6e9;border-radius:4px;height:24px;">
+                <div style="width:10%;background:#fdcb6e;border-radius:4px;height:24px;display:flex;align-items:center;padding-left:8px;font-size:12px;color:#856404;font-weight:600;">10%</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="width:120px;font-size:14px;">Other</span>
+              <div style="flex:1;background:#dfe6e9;border-radius:4px;height:24px;">
+                <div style="width:6%;background:#fab1a0;border-radius:4px;height:24px;display:flex;align-items:center;padding-left:8px;font-size:12px;color:#7c3a2d;font-weight:600;">6%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+
+<!-- ========== SLIDE-OVER PANELS ========== -->
+
+<!-- Application Review Panel -->
+<div class="panel-overlay" id="panel-application" onclick="if(event.target===this)closePanel('application')">
+  <div class="panel">
+    <div class="panel-header">
+      <h3>Application Review</h3>
+      <button class="panel-close" onclick="closePanel('application')">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:20px;">Priya Sharma</h2>
+          <div style="color:#636e72;font-size:14px;">priya.s@gmail.com &middot; Applied Feb 24, 2026</div>
+        </div>
+        <span class="status applied">Pending Review</span>
+      </div>
+
+      <div class="briefing-card">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          <span class="ai-badge">AI Summary</span>
+        </div>
+        <p style="font-size:14px;line-height:1.6;">ML researcher at DeepMind with 3 years of experience and 2 published papers on interpretability. Wants to transition from capabilities research to AI safety alignment work. Strong technical fit - main questions are around which organizations to target and how to position her existing work. Good candidate for advising.</p>
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="form-group">
+        <label>Current Role</label>
+        <div class="value">ML Research Scientist at DeepMind, London (3 years)</div>
+      </div>
+      <div class="form-group">
+        <label>Career History</label>
+        <div class="value">BSc Computer Science (Imperial College), MSc Machine Learning (UCL), Research intern at Meta AI (2021), then joined DeepMind. Published 2 papers on neural network interpretability in NeurIPS and ICML.</div>
+      </div>
+      <div class="form-group">
+        <label>Career Goals</label>
+        <div class="value">Transition to AI safety/alignment research. Ideally at an organization focused on technical alignment (MIRI, Redwood Research, ARC, Anthropic). Willing to take a pay cut. Wants to make a significant contribution to reducing existential risk from AI. Timeline: within 6 months.</div>
+      </div>
+      <div class="form-group">
+        <label>Values & Priorities</label>
+        <div class="value">Deeply motivated by existential risk reduction. Values rigorous research environments. Wants to work with people who take alignment seriously. Less interested in policy/governance side, more in technical work. Work-life balance is moderately important.</div>
+      </div>
+      <div class="form-group">
+        <label>Constraints</label>
+        <div class="value">UK visa tied to current employer (but could transfer). Partner is based in London, would prefer to stay but open to Bay Area. No dependents. Financially stable - can afford 3-month gap between roles.</div>
+      </div>
+      <div class="form-group">
+        <label>EA Involvement</label>
+        <div class="value">Somewhat involved - attended EA Global London 2025, reads 80,000 Hours content, has donated ~5% of income to AI safety orgs. Not deeply embedded in community.</div>
+      </div>
+      <div class="form-group">
+        <label>What They Hope to Get From Advising</label>
+        <div class="value">1) Guidance on which AI safety orgs would be the best fit for my background. 2) How to position my interpretability work as relevant to alignment. 3) Introductions to people working in technical alignment. 4) Whether I should try to publish alignment-specific work first vs. apply directly.</div>
+      </div>
+      <div class="form-group">
+        <label>Uploaded Documents</label>
+        <div class="value"><a href="#" style="color:#0984e3;">Resume_Priya_Sharma.pdf</a> &middot; <a href="#" style="color:#0984e3;">Career_Reflection.docx</a></div>
+      </div>
+
+      <hr class="section-divider">
+
+      <div class="form-group">
+        <label>Suggested Advisor Match</label>
+        <div class="value" style="display:flex;align-items:center;gap:8px;">
+          <strong>Tom R.</strong> <span class="tag blue">AI Safety</span> <span class="tag purple">Research</span>
+          <span style="font-size:12px;color:#636e72;">(3/5 sessions this week)</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Screening Notes (optional)</label>
+        <textarea class="editable" rows="3" placeholder="Add any notes about this application..."></textarea>
+      </div>
+    </div>
+    <div class="panel-footer">
+      <button class="btn btn-danger" onclick="closePanel('application')">Reject</button>
+      <button class="btn btn-secondary">Waitlist</button>
+      <button class="btn btn-primary" onclick="closePanel('application')">Approve & Send Booking Link</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pre-Call Briefing Panel -->
+<div class="panel-overlay" id="panel-briefing" onclick="if(event.target===this)closePanel('briefing')">
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h3>Pre-Call Briefing</h3>
+        <div style="font-size:13px;color:#636e72;margin-top:2px;">
+          Sarah Chen &middot; Today 10:00 AM &middot; <span class="ai-badge">AI Generated</span>
+        </div>
+      </div>
+      <button class="panel-close" onclick="closePanel('briefing')">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div class="briefing-section">
+        <h4>Background Summary</h4>
+        <p>Sarah is a data scientist at a mid-size fintech company in San Francisco (4 years). She has a Master's in Statistics from Stanford and strong programming skills in Python and R. She became interested in AI safety after reading "The Alignment Problem" and attending an AI safety reading group. She has no formal background in ML research but has experience with applied ML (fraud detection, risk modeling). She's considering a significant career change and is willing to invest in upskilling.</p>
+      </div>
+
+      <div class="briefing-section">
+        <h4>Goals & Motivations</h4>
+        <p>Sarah wants to transition from applied data science to AI safety technical research. She's motivated by a genuine concern about existential risk and feels her current work isn't contributing meaningfully. Her ideal outcome is a role at an alignment research organization where she can contribute technically. She's also open to AI safety-adjacent roles (governance, policy) if the technical path proves too difficult given her background.</p>
+      </div>
+
+      <div class="briefing-section">
+        <h4>Key Constraints</h4>
+        <ul>
+          <li><strong>Financial:</strong> Has ~$40K in savings, could handle 6 months without income but not much more</li>
+          <li><strong>Geographic:</strong> Strongly prefers Bay Area (partner's job is there)</li>
+          <li><strong>Visa:</strong> US citizen, no restrictions</li>
+          <li><strong>Timeline:</strong> Wants to make the transition within 12 months</li>
+          <li><strong>Skills gap:</strong> Lacks formal ML research experience and publications</li>
+        </ul>
+      </div>
+
+      <div class="briefing-section">
+        <h4>Suggested Talking Points</h4>
+        <div class="briefing-card">
+          <ol style="padding-left:20px;">
+            <li style="margin-bottom:8px;"><strong>Bridge the skills gap:</strong> Explore whether the MATS program or ARENA would be a good fit to build alignment-specific research skills while she's still employed</li>
+            <li style="margin-bottom:8px;"><strong>Leverage existing strengths:</strong> Her statistics background and applied ML experience are more relevant to alignment than she might think - discuss how interpretability and evaluation work draws on these skills</li>
+            <li style="margin-bottom:8px;"><strong>Realistic timeline:</strong> 12 months is tight for a full career pivot into research. Discuss whether a stepping-stone role (e.g., research engineer vs. researcher) might be more achievable</li>
+            <li style="margin-bottom:8px;"><strong>Financial planning:</strong> If she does MATS or similar, that's ~3 months unpaid. Discuss whether her savings can support this while maintaining Bay Area living costs</li>
+            <li style="margin-bottom:8px;"><strong>Network building:</strong> She's relatively new to the AI safety community. Suggest specific meetups, conferences, and online communities</li>
+            <li style="margin-bottom:8px;"><strong>Alternative paths:</strong> If direct research feels too far, explore AI safety-adjacent roles at Anthropic, OpenAI, DeepMind (policy, safety evaluations, red teaming) that she could get with her current background</li>
+            <li style="margin-bottom:8px;"><strong>Publication strategy:</strong> Discuss whether writing a short alignment-relevant blog post or paper could help signal commitment and build credibility</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="briefing-section">
+        <h4>Relevant Resources</h4>
+        <div class="briefing-card resource">
+          <ul style="padding-left:20px;">
+            <li style="margin-bottom:6px;"><strong>MATS (ML Alignment Theory Scholars)</strong> - Mentored research program, ideal for her transition. Next cohort applications open March 2026.</li>
+            <li style="margin-bottom:6px;"><strong>ARENA (Alignment Research Engineer Accelerator)</strong> - More technical, could fill her ML research gaps.</li>
+            <li style="margin-bottom:6px;"><strong>AI Safety Fundamentals Course</strong> - Good starting point if she hasn't done structured alignment learning yet.</li>
+            <li style="margin-bottom:6px;"><strong>80,000 Hours AI Safety Career Guide</strong> - Comprehensive overview of the landscape she's entering.</li>
+            <li style="margin-bottom:6px;"><strong>Alignment Forum</strong> - For engaging with ongoing technical discussions and building visibility.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="briefing-section">
+        <h4>Potential Connections</h4>
+        <div class="briefing-card resource">
+          <ul style="padding-left:20px;">
+            <li style="margin-bottom:6px;"><strong>Dr. Nina Patel (MIRI)</strong> - Can speak to what alignment research looks like day-to-day and what backgrounds are valued.</li>
+            <li style="margin-bottom:6px;"><strong>Sam Whitfield (Anthropic)</strong> - Could discuss policy research roles as an alternative entry point. (Note: busy until April)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="briefing-section">
+        <h4>Watch Out For</h4>
+        <div class="briefing-card warning">
+          <ul style="padding-left:20px;">
+            <li style="margin-bottom:6px;">She may underestimate how transferable her statistics skills are - help her see the value in her existing expertise</li>
+            <li style="margin-bottom:6px;">Financial constraints could create pressure to rush the transition. Encourage thoughtful planning over speed</li>
+            <li style="margin-bottom:6px;">Her openness to policy/governance as a "backup" may indicate less clarity about what she actually wants - probe this</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Follow-up Email Panel -->
+<div class="panel-overlay" id="panel-followup" onclick="if(event.target===this)closePanel('followup')">
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h3>Follow-up Email</h3>
+        <div style="font-size:13px;color:#636e72;margin-top:2px;">
+          Emma Rodriguez &middot; Call: Feb 21 &middot; <span class="ai-badge">AI Generated Draft</span>
+        </div>
+      </div>
+      <button class="panel-close" onclick="closePanel('followup')">&times;</button>
+    </div>
+    <div class="panel-body">
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><h3>Call Summary</h3></div>
+        <div class="card-body" style="font-size:14px;line-height:1.6;">
+          <p>Emma is a corporate lawyer (5 years at a major London firm) looking to transition into AI governance/policy. We discussed three main pathways: (1) joining a think tank like CSET or GovAI directly, (2) doing a master's in public policy or technology governance first, (3) trying to pivot within her current firm to their tech policy practice.</p>
+          <p style="margin-top:8px;">Key takeaway: She has strong analytical and writing skills that transfer well to policy work, but lacks the technical AI knowledge that top governance roles require. We agreed that a focused upskilling period (3-6 months of self-study + the AI Safety Fundamentals course) combined with attending relevant conferences would be the best first step, without committing to a full master's yet.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><h3>Action Items</h3></div>
+        <div class="card-body" style="font-size:14px;line-height:1.6;">
+          <ol style="padding-left:20px;">
+            <li style="margin-bottom:6px;">Enroll in AI Safety Fundamentals course (next cohort starts March 15)</li>
+            <li style="margin-bottom:6px;">Start reading the AI governance literature list (shared below)</li>
+            <li style="margin-bottom:6px;">Apply to the GovAI summer fellowship (deadline April 30)</li>
+            <li style="margin-bottom:6px;">Attend the AI Policy Forum workshop in London (March 22)</li>
+            <li style="margin-bottom:6px;">Connect with Maya Lin at Open Philanthropy (intro offered)</li>
+            <li style="margin-bottom:6px;">Draft a short blog post on AI regulation from a legal perspective for the EA Forum</li>
+          </ol>
+        </div>
+      </div>
+
+      <h3 style="margin-bottom:12px;">Email Draft <span style="font-size:12px;color:#636e72;font-weight:normal;">(edit below before sending)</span></h3>
+
+      <div class="email-preview">
+        <div class="email-to">To: emma.r@lawfirm.co.uk</div>
+        <div class="email-subject">Following up on our advising call</div>
+        <textarea class="editable" rows="28" style="width:100%;border:none;background:transparent;font-size:14px;line-height:1.7;resize:vertical;">Hi Emma,
+
+Thanks so much for taking the time to chat on Friday - it was a great conversation and I came away really optimistic about your potential path into AI governance work.
+
+Here's a recap of what we discussed and the next steps we agreed on:
+
+Key discussion points:
+- Your legal analytical skills are highly transferable to AI governance
+- A full master's may not be necessary if you can demonstrate domain knowledge through other means
+- The GovAI fellowship could be an excellent entry point
+
+Action items:
+- [ ] Enroll in the AI Safety Fundamentals course (next cohort March 15): https://aisafetyfundamentals.com
+- [ ] Start the AI governance reading list: https://governance.ai/reading-list
+- [ ] Apply to the GovAI Summer Fellowship by April 30: https://governance.ai/fellowship
+- [ ] Attend the AI Policy Forum workshop on March 22 in London
+- [ ] Write a short blog post on AI regulation from a legal perspective for the EA Forum
+- [ ] Review the 80,000 Hours AI governance career guide: https://80000hours.org/ai-governance
+
+I'd also love to connect you with Maya Lin at Open Philanthropy - she works on AI governance grantmaking and could give you a great perspective on the landscape. I'll send a separate intro email if you're interested.
+
+A few additional resources that might be helpful:
+- Legal Priorities Project: https://legalpriorities.org (academic research on legal aspects of transformative tech)
+- Centre for the Governance of AI: https://governance.ai (one of the top research groups in this space)
+- AI Now Institute: https://ainowinstitute.org (policy-focused, strong on regulation)
+
+Don't hesitate to reach out if you have any questions as you work through these steps. We'll also send a brief feedback survey in a few days - your input helps us improve our advising.
+
+Best of luck with everything, Emma. I think you're well-positioned for this transition.
+
+Warm regards,
+Tom</textarea>
+      </div>
+    </div>
+    <div class="panel-footer">
+      <button class="btn btn-secondary" onclick="closePanel('followup')">Save as Draft</button>
+      <button class="btn btn-primary" onclick="closePanel('followup')">Send Email</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Resource Panel -->
+<div class="panel-overlay" id="panel-add-resource" onclick="if(event.target===this)closePanel('add-resource')">
+  <div class="panel">
+    <div class="panel-header">
+      <h3>Add Resource</h3>
+      <button class="panel-close" onclick="closePanel('add-resource')">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div class="form-group">
+        <label>Resource Name</label>
+        <input type="text" style="width:100%;padding:8px 12px;border:1px solid #dfe6e9;border-radius:6px;font-size:14px;" placeholder="e.g., MATS Program">
+      </div>
+      <div class="form-group">
+        <label>URL</label>
+        <input type="text" style="width:100%;padding:8px 12px;border:1px solid #dfe6e9;border-radius:6px;font-size:14px;" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select style="width:100%;padding:8px 12px;border:1px solid #dfe6e9;border-radius:6px;font-size:14px;">
+          <option>Job Board</option><option>Organization</option><option>Guide</option><option>Course</option><option>Community</option><option>Tool</option><option>Book</option><option>Article</option><option>Fellowship</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Career Paths (select all that apply)</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <label style="font-weight:normal;font-size:13px;"><input type="checkbox"> AI Safety</label>
+          <label style="font-weight:normal;font-size:13px;"><input type="checkbox"> Global Health</label>
+          <label style="font-weight:normal;font-size:13px;"><input type="checkbox"> Policy</label>
+          <label style="font-weight:normal;font-size:13px;"><input type="checkbox"> Operations</label>
+          <label style="font-weight:normal;font-size:13px;"><input type="checkbox"> Research</label>
+          <label style="font-weight:normal;font-size:13px;"><input type="checkbox"> Entrepreneurship</label>
+          <label style="font-weight:normal;font-size:13px;"><input type="checkbox"> Climate</label>
+          <label style="font-weight:normal;font-size:13px;"><input type="checkbox"> Biosecurity</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea class="editable" rows="4" placeholder="What is this resource and why is it useful?"></textarea>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+        <button class="btn btn-outline">Auto-generate description from URL</button>
+        <span class="ai-badge">AI</span>
+      </div>
+    </div>
+    <div class="panel-footer">
+      <button class="btn btn-secondary" onclick="closePanel('add-resource')">Cancel</button>
+      <button class="btn btn-primary">Save Resource</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+function showPage(pageId) {
+  // Hide all pages
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  // Show selected
+  document.getElementById('page-' + pageId).classList.add('active');
+  // Update nav
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector('[data-page="' + pageId + '"]').classList.add('active');
+}
+
+function openPanel(panelId) {
+  document.getElementById('panel-' + panelId).classList.add('active');
+}
+
+function closePanel(panelId) {
+  document.getElementById('panel-' + panelId).classList.remove('active');
+}
+</script>
+
+</body>
+</html>
